@@ -115,7 +115,11 @@ export function kingStatusMessage(state: GameState): string {
   const punchline = randomPunchline(hasKing ? "kingStatus" : "noKing");
 
   if (hasKing) {
-    const phase = isBiddingPhase(state) ? "Bidding" : "Battle";
+    const phase = isBiddingPhase(state)
+      ? "Bidding"
+      : state.battleActive
+        ? "Battle"
+        : "Peace";
     const lines = [
       `👑 <b>Throne Status Report</b>`,
       ``,
@@ -128,9 +132,7 @@ export function kingStatusMessage(state: GameState): string {
       if (state.thronePot > 0n) {
         lines.push(`Throne Pot: ${formatTokens(state.thronePot)} HCRN`);
       }
-    } else if (state.attackSoldiers === 0n) {
-      lines.push(`Status: Peace ☮️`);
-    } else {
+    } else if (state.battleActive) {
       lines.push(`Attack: ${state.attackSoldiers} ⚔️ vs Defense: ${state.defenseSoldiers} 🛡️`);
     }
 
