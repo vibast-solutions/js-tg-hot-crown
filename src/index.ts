@@ -57,10 +57,14 @@ async function getSignerFromSignature(
   return null;
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function handleEvent(
   instruction: string,
   signature: string
 ): Promise<void> {
+  // Wait for state to settle — log subscription fires before account state is queryable
+  await sleep(2000);
   const newState = await fetchGameState(program);
   if (!newState) {
     console.error("Failed to fetch game state after event");
