@@ -128,6 +128,8 @@ export function kingStatusMessage(state: GameState): string {
       if (state.thronePot > 0n) {
         lines.push(`Throne Pot: ${formatTokens(state.thronePot)} HCRN`);
       }
+    } else if (state.attackSoldiers === 0n) {
+      lines.push(`Status: Peace ☮️`);
     } else {
       lines.push(`Attack: ${state.attackSoldiers} ⚔️ vs Defense: ${state.defenseSoldiers} 🛡️`);
     }
