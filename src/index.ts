@@ -59,6 +59,40 @@ async function getSignerFromSignature(
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+function getNextPostTime(): Date {
+  const intervalMs = config.kingPostIntervalHours * 60 * 60 * 1000;
+  const now = Date.now();
+  const next = Math.ceil(now / intervalMs) * intervalMs;
+  return new Date(next);
+}
+
+async function postKingStatus(): Promise<void> {
+  try {
+    const state = await fetchGameState(program);
+    if (!state) {
+      console.error("Failed to fetch game state for king status post");
+      return;
+    }
+    const message = kingStatusMessage(state);
+    console.log(`[${new Date().toISOString()}] Posting king status`);
+    await sendTelegramMessage(message);
+  } catch (error) {
+    console.error("King status post failed:", error);
+  }
+}
+
+function scheduleKingStatusPost(): void {
+  const next = getNextPostTime();
+  const delayMs = next.getTime() - Date.now();
+  console.log(`King status post every ${config.kingPostIntervalHours}h (next: ${next.toISOString()})`);
+
+  setTimeout(async () => {
+    await postKingStatus();
+    // After first aligned post, repeat on fixed interval
+    setInterval(postKingStatus, config.kingPostIntervalHours * 60 * 60 * 1000);
+  }, delayMs);
+}
+
 async function handleEvent(
   instruction: string,
   signature: string
@@ -209,23 +243,8 @@ async function main(): Promise<void> {
 
   subscribe();
 
-  // Periodic king status post
-  const intervalMs = config.kingPostIntervalHours * 60 * 60 * 1000;
-  console.log(`King status post every ${config.kingPostIntervalHours}h`);
-  setInterval(async () => {
-    try {
-      const state = await fetchGameState(program);
-      if (!state) {
-        console.error("Failed to fetch game state for king status post");
-        return;
-      }
-      const message = kingStatusMessage(state);
-      console.log(`[${new Date().toISOString()}] Posting king status`);
-      await sendTelegramMessage(message);
-    } catch (error) {
-      console.error("King status post failed:", error);
-    }
-  }, intervalMs);
+  // Periodic king status post at fixed UTC hours
+  scheduleKingStatusPost();
 
   // Keep alive + reconnect on WebSocket drop
   setInterval(async () => {
